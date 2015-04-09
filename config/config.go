@@ -9,10 +9,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Root yaml configuration. An anonymous field is used here to get rid of the
+// ridondance of having two config struct nested.
 type OldSoundRabbitMQ struct {
 	RabbitMQConfiguration `yaml:"old_sound_rabbit_mq"`
 }
 
+// Main RabbitMQBundle configuration tree
 type RabbitMQConfiguration struct {
 	Connections map[string]Connection `yaml:"connections"`
 	Producers   map[string]Producer   `yaml:"producers"`
@@ -52,6 +55,8 @@ type QueueOpts struct {
 	Args        map[string][]string `yaml:"arguments"`
 }
 
+// Parse is used to populate a config.OldSoundRabbitMQ struct from a fs path
+// pointing to a rabbitmq.yml file
 func (config *OldSoundRabbitMQ) Parse(path string) error {
 	configFile, err := getConfigFile(path)
 	if err != nil {
@@ -71,6 +76,7 @@ func (config *OldSoundRabbitMQ) Parse(path string) error {
 	return nil
 }
 
+// helper function that validates path and read the file
 func getConfigFile(path string) ([]byte, error) {
 	if _, err := os.Stat(path); err != nil {
 		switch {

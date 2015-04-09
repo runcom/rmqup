@@ -10,6 +10,6 @@ test: install
 	go test -a
 
 build:
-	go build -a -o up
+	go build -a -o rmqup
 
 #deb: #fpm
