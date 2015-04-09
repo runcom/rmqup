@@ -1,0 +1,469 @@
+old_sound_rabbit_mq:
+    connections:
+        default:
+            host:     rabbit
+            lazy:     true
+            port:     5672
+            user:     guest
+            password: guest
+            vhost:    test
+            # da abilitare quando si riuscirà ad aggiornare amqplib
+            #heartbeat: 10
+
+    producers:
+        entity:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+        delayed_120:
+            connection: default
+            exchange_options:
+                name: delayed_120
+                type: topic
+        delayed_300:
+            connection: default
+            exchange_options:
+                name: delayed_300
+                type: topic
+        delayed_600:
+            connection: default
+            exchange_options:
+                name: delayed_600
+                type: topic
+        bo_export:
+            connection: default
+            exchange_options:
+                name: bo_export
+                type: topic
+        dlx_messages:
+            connection: default
+            exchange_options:
+                name: dlx_messages
+                type: topic
+
+    consumers:
+        delayed_120:
+            connection: default
+            exchange_options:
+                name: delayed_120
+                type: topic
+            queue_options:
+                name: delayed_120
+                routing_keys:
+                    - '#'
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'entity']
+                    'x-message-ttl': ['I', 120000]
+            callback: prima.rabbitmq.consumer.delayed_120
+
+        delayed_300:
+            connection: default
+            exchange_options:
+                name: delayed_300
+                type: topic
+            queue_options:
+                name: delayed_300
+                routing_keys:
+                    - '#'
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'entity']
+                    'x-message-ttl': ['I', 300000]
+            callback: prima.rabbitmq.consumer.delayed_300
+
+        delayed_600:
+            connection: default
+            exchange_options:
+                name: delayed_600
+                type: topic
+            queue_options:
+                name: delayed_600
+                routing_keys:
+                    - '#'
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'entity']
+                    'x-message-ttl': ['I', 600000]
+            callback: prima.rabbitmq.consumer.delayed_600
+
+        mailer:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: mailer
+                routing_keys:
+                    - prima.entity.save.visited_thankyou.red
+                    - prima.entity.save.visited_thankyou.other_vehicles
+                    - prima.entity.save.pdf_contract.created.delay_120
+                    - prima.entity.save.pdf_contract.created.delay_300
+                    - prima.entity.insurance.pdf_temporary_coupon.created
+                    - prima.entity.save.resend_request.created
+                    - prima.entity.back_office.queue.document.no_attachments
+                    - prima.entity.back_office.queue.document.no_code
+                    - prima.entity.back_office.queue.document.save_expired
+                    - prima.entity.back_office.queue.document.bad_attachments
+                    - prima.entity.back_office.save_workable
+                    - prima.entity.user.communication_channel.updated
+                    - prima.entity.user.password_change.confirm
+                    - prima.entity.transaction.reject_payment.back_office
+                    - prima.entity.user.temporary_token.email_change.created
+                    - prima.entity.user.temporary_token.payment_missing_token_link.created
+                    - prima.entity.user.temporary_token.password_reset.created
+                    - prima.patch_manager.next_phase
+                    - prima.patch_manager.integration
+                    - prima.entity.payment.transaction.updated.delay_120
+                    - prima.entity.payment.transaction.updated
+                    - finite.post_transition.save.issue_request.delay_600
+                    - prima.entity.insurance.interruption.persist
+                    - prima.entity.insurance.substitution.persist
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            callback: prima.rabbitmq.consumer.mailer
+
+        pdf_splitter:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: pdf_splitter
+                routing_keys:
+                    - document_upload_pdf.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.document.pdf_splitter
+
+        page_creator:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: page_creator
+                routing_keys:
+                    - document_upload_image.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.document.page_creator
+
+        page_previewer:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: page_previewer
+                routing_keys:
+                    - prima.entity.document.page.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.document.page_previewer
+
+        page_rotator:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: page_rotator
+                routing_keys:
+                    - prima.entity.document.page.rotate
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.document.page_rotator
+
+        queue_pdf_splitter:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: queue_pdf_splitter
+                routing_keys:
+                    - document_queue_upload_pdf.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.backoffice.queue.document.pdf_splitter
+
+        queue_page_creator:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: queue_page_creator
+                routing_keys:
+                    - document_queue_upload_image.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.backoffice.queue.document.page_creator
+
+        queue_page_previewer:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: queue_page_previewer
+                routing_keys:
+                    - prima.entity.back_office.queue.document.page.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.backoffice.queue.document.page_previewer
+
+        queue_completed_document_checker:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: queue_completed_document_checker
+                routing_keys:
+                    - document_queue_page.previewed
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.backoffice.queue.document.complete_checker
+
+        insurance_pdf_temporary_coupon:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: insurance_pdf_temporary_coupon
+                routing_keys:
+                    - prima.entity.insurance.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.insurance.pdf_temporary_coupon
+
+        insurance_pdf_issue_documents:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: insurance_pdf_issue_documents
+                routing_keys:
+                    - prima.entity.insurance.created
+                    - prima.entity.insurance.duplicate
+#                    - prima.entity.save.resend_request.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.insurance.pdf_issue_documents_generator
+
+        save_pdf_contract_generator:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: save_pdf_contract_generator
+                routing_keys:
+                    - prima.entity.save.car.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.save.pdf_contract_generator
+
+        insurance_pdf_contract_generator:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: insurance_pdf_contract_generator
+                routing_keys:
+                    - prima.entity.insurance.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.insurance.pdf_contract_generator
+
+        activity_creator:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: activity_creator
+                routing_keys:
+                    - prima.entity.activity.documents.uploaded
+                    - prima.entity.activity.bo_queue_document.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.activity.creator
+
+        activity_rescheduler:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: activity_rescheduler
+                routing_keys:
+                    - finite.post_transition.activity.reschedule
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.activity.rescheduler
+
+        asterisk_status:
+            connection: default
+            exchange_options:
+                name: asterisk.monitor
+                type: topic
+                durable: false
+                auto_delete: true
+            queue_options:
+                name: asterisk_status
+                routing_keys:
+                    - asterisk.status
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.asterisk.status
+
+        asterisk_incoming_call:
+            connection: default
+            exchange_options:
+                name: asterisk.monitor
+                type: topic
+                durable: false
+                auto_delete: true
+            queue_options:
+                name: asterisk_incoming_call
+                routing_keys:
+                    - asterisk.incoming_call
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.asterisk.incoming_call
+
+        export_csv:
+            connection: default
+            exchange_options:
+                name: bo_export
+                type: topic
+            queue_options:
+                name: export_csv
+                routing_keys:
+                    - prima.bo.export_csv
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.export_csv
+
+        log_manager:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: log_manager
+                routing_keys:
+                    - log_manager.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.log_manager
+
+        ania_web_service:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: ania_web_service
+                routing_keys:
+                    - prima.entity.ania.stream.web_service.created
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.ania.stream.web_service
+
+        imap_move:
+            connection: default
+            exchange_options:
+                name: entity
+                type: topic
+            queue_options:
+                name: imap_move
+                routing_keys:
+                    - imap.move
+                arguments:
+                    'x-dead-letter-exchange': ['S', 'dlx_messages']
+            qos_options:
+                prefetch_size: 0
+                prefetch_count: 1
+                global: false
+            callback: prima.rabbitmq.consumer.imap.move
