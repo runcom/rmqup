@@ -12,11 +12,29 @@ import (
 // Root yaml configuration. An anonymous field is used here to get rid of the
 // ridondance of having two config struct nested.
 type OldSoundRabbitMQ struct {
-	RabbitMQConfiguration `yaml:"old_sound_rabbit_mq"`
+	rabbitMQConfiguration `yaml:"old_sound_rabbit_mq"`
 }
 
+func (c *OldSoundRabbitMQ) GetConnection(name string) (*Connection, error) {
+	conn, ok := c.Connections[name]
+	if !ok {
+		return nil, fmt.Errorf("No connection named %s", name)
+	}
+	return &conn, nil
+}
+
+func (c *OldSoundRabbitMQ) GetConsumer(name string) (*Consumer, error) {
+	consumer, ok := c.Consumers[name]
+	if !ok {
+		return nil, fmt.Errorf("No consumer named %s", name)
+	}
+	return &consumer, nil
+}
+
+// func (c *OldSoundRabbitMQ) GetProducer(name string) *Producer {}
+
 // Main RabbitMQBundle configuration tree
-type RabbitMQConfiguration struct {
+type rabbitMQConfiguration struct {
 	Connections map[string]Connection `yaml:"connections"`
 	Producers   map[string]Producer   `yaml:"producers"`
 	Consumers   map[string]Consumer   `yaml:"consumers"`
@@ -32,16 +50,16 @@ type Connection struct {
 }
 
 type Producer struct {
-	Connection      string       `yaml:"connection"`
+	ConnectionName  string       `yaml:"connection"`
 	ExchangeOptions ExchangeOpts `yaml:"exchange_options"`
 }
 
 type Consumer struct {
-	Connection      string       `yaml:"connection"`
+	ConnectionName  string       `yaml:"connection"`
 	ExchangeOptions ExchangeOpts `yaml:"exchange_options"`
 	QueueOptions    QueueOpts    `yaml:"queue_options"`
-	// service to launch inside php command with the json body
-	Callback string `yaml:"callback"`
+	Callback        string       `yaml:"callback"`
+	// callback above is the service to launch inside php command with the json body
 }
 
 type ExchangeOpts struct {

@@ -6,7 +6,7 @@ old_sound_rabbit_mq:
             port:     5672
             user:     guest
             password: guest
-            vhost:    ""
+            vhost:    test
             # da abilitare quando si riuscirà ad aggiornare amqplib
             #heartbeat: 10
 

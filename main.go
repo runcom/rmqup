@@ -6,7 +6,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/ogier/pflag"
-	"github.com/runcom/up/config"
+	"github.com/runcom/rmqup/config"
+	"github.com/runcom/rmqup/consumer"
 )
 
 var (
@@ -15,14 +16,6 @@ var (
 	flWorker = pflag.StringP("worker", "w", "", "Consumer name to start")
 	// connection params
 )
-
-type Worker struct {
-}
-
-func newWorker() (*Worker, error) {
-	// TODO: implement
-	return nil, nil
-}
 
 func main() {
 	pflag.Parse()
@@ -34,5 +27,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%v", c)
+	//fmt.Printf("%v", c)
+
+	consumer, err := consumer.NewConsumer("mailer", "default", &c)
+	if err != nil {
+		panic(err)
+	}
+	if err := consumer.Connect(); err != nil {
+		panic(err)
+	}
+
+	forever := make(chan struct{})
+	<-forever
+	fmt.Printf("%v", consumer)
 }
