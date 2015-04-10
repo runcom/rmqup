@@ -91,7 +91,7 @@ old_sound_rabbit_mq:
                 name: entity
                 type: topic
             queue_options:
-                name: mailer
+                name: testmailer
                 routing_keys:
                     - prima.entity.save.visited_thankyou.red
                     - prima.entity.save.visited_thankyou.other_vehicles

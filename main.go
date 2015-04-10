@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -11,9 +10,10 @@ import (
 )
 
 var (
-	flConfig = pflag.StringP("config", "c", "./app/config/bundles/rabbitmq.yml", "RabbitMQBundle configuration")
-	flSfPath = pflag.StringP("sfpath", "p", "./", "Symfony2 application path")
-	flWorker = pflag.StringP("worker", "w", "", "Consumer name to start")
+	flConfig     = pflag.StringP("config", "c", "./app/config/bundles/rabbitmq.yml", "RabbitMQBundle configuration")
+	flSfPath     = pflag.StringP("sfpath", "p", "./", "Symfony2 application path")
+	flWorker     = pflag.StringP("consumer", "w", "", "Consumer name to start")
+	flConnection = pflag.String("connection", "default", "Connection name to use")
 	// connection params
 )
 
@@ -27,17 +27,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	//fmt.Printf("%v", c)
+	if *flWorker == "" {
+		logrus.Fatal("Please provide a consumer name")
+		// exit
+		os.Exit(1)
+	}
 
-	consumer, err := consumer.NewConsumer("mailer", "default", &c)
+	consumer, err := consumer.NewConsumer(*flWorker, *flConnection, &c)
 	if err != nil {
 		panic(err)
 	}
+
 	if err := consumer.Connect(); err != nil {
 		panic(err)
 	}
+	defer consumer.Disconnect()
 
 	forever := make(chan struct{})
 	<-forever
-	fmt.Printf("%v", consumer)
 }
